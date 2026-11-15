@@ -89,7 +89,23 @@ pub struct AssetServer {
 impl AssetServer {
     /// Query the mounted asset backend without decoding or caching its content.
     pub fn contains(&self, path: &str) -> bool {
-        self.io.read_file(path).is_ok()
+        self.read_asset_file(path).is_ok()
+    }
+
+    /// Fallback to .webp only when .pic is missing
+    fn read_asset_file(&self, path: &str) -> Result<AssetDataAccessor> {
+        match self.io.read_file(path) {
+            Ok(data) => Ok(data),
+            Err(primary_error) => match crate::asset::system::webp_fallback_path(path) {
+                Some(fallback) => self.io.read_file(&fallback).map_err(|fallback_error| {
+                    primary_error.context(format!(
+                        "WebP fallback {:?} also failed: {fallback_error:#}",
+                        fallback
+                    ))
+                }),
+                None => Err(primary_error),
+            },
+        }
     }
     pub fn context(&self) -> &AssetLoadContext {
         &self.context
@@ -211,8 +227,7 @@ impl AssetServer {
 
         // could not find the asset in the cache, load it
         let data = self
-            .io
-            .read_file(path)
+            .read_asset_file(path)
             .with_context(|| format!("Reading asset {:?}", path))?;
 
         let context = self.context.clone();
@@ -247,8 +262,7 @@ impl AssetServer {
         self.requested_paths.lock().unwrap().push(path.to_string());
         debug!("Loading uncached asset: {}", path);
         let data = self
-            .io
-            .read_file(path)
+            .read_asset_file(path)
             .with_context(|| format!("Reading asset {:?}", path))?;
         let mut asset = T::load(&self.context, args, path, data)
             .await

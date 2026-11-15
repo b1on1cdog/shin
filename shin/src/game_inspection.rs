@@ -175,7 +175,11 @@ pub(crate) fn inspect(cli: &Cli) -> Result<()> {
     let missing: Vec<_> = paths
         .iter()
         .filter(|path| !path.contains('?'))
-        .filter(|path| io.read_file(path).is_err())
+        .filter(|path| {
+            io.read_file(path).is_err()
+                && crate::asset::system::webp_fallback_path(path)
+                    .is_none_or(|fallback| io.read_file(&fallback).is_err())
+        })
         .collect();
     println!(
         "Asset references: {} unique paths, {} name templates, {} unresolved literal paths",

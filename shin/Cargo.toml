@@ -31,6 +31,8 @@ futures = "0.3.34"
 smallvec = { workspace = true }
 heapless = { workspace = true }
 
+image = { workspace = true, features = ["webp"] }
+
 indexmap = { workspace = true }
 
 tracing = { workspace = true } # NOTE: enabling `release_max_level_off` increases perf a lot

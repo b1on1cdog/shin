@@ -9,7 +9,7 @@ mod scenario;
 
 use std::{
     fs::File,
-    io::{BufReader, BufWriter},
+    io::{BufReader, BufWriter, Read},
     path::PathBuf,
 };
 
@@ -25,6 +25,22 @@ use savedata::{SavedataCommand, savedata_command};
 use scenario::{ScenarioCommand, scenario_command};
 use shin_core::format::{audio::AudioSource, picture::SimpleMergedPicture};
 use tracing_subscriber::EnvFilter;
+/*
+//use image::codecs::webp::Encoder as WebpEncoder
+//use little_exif::metadata::Metadata;
+//use little_exif::exif_tag::ExifTag;
+//use serde_json;
+use ormlite::model::*;
+use ormlite::Connection;
+use ormlite::sqlite::SqliteConnection;
+*/
+use std::fs;
+use std::io::Write;
+//use futures::executor::block_on;
+use std::path::Path;
+use wpool::WPool;
+use webpx::{Encoder, Unstoppable};
+//use std::any::type_name_of_val;
 
 #[derive(clap::Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -91,6 +107,21 @@ enum PictureCommand {
         picture_path: PathBuf,
         /// Path to the output PNG file
         output_path: PathBuf,
+    },
+    /// Decode all PIC files in a directory (Slow and heavy!)
+    BulkDecode {
+        #[clap(long)]
+        higurashi: bool,
+        // Input directory
+        directory_path: PathBuf,
+        // Outut directory
+        output_path: PathBuf,
+    },
+    Test {
+        picture_path: PathBuf,
+    },
+    TestWrite {
+        picture_path: PathBuf,
     },
 }
 
@@ -183,6 +214,23 @@ fn generate_command(command: GenerateCommand) -> Result<()> {
     );
     Ok(())
 }
+/*
+#[derive(Model, Debug)]
+#[ormlite(table = "pic_header")]
+pub struct MPictureHeaderInfo {
+    #[ormlite(primary_key)]
+    pub filename: String,
+    pub origin_x: i16,
+    pub origin_y: i16,
+    pub effective_width: u16,
+    pub effective_height: u16,
+    pub block_count: u32,
+    pub picture_id: u32,
+    pub flags: u32,
+    /// Per-file placement scale in units of 1/4096; cache aliases may differ.
+    pub scale: u32,
+}
+*/
 
 fn picture_command(command: PictureCommand) -> Result<()> {
     match command {
@@ -203,6 +251,97 @@ fn picture_command(command: PictureCommand) -> Result<()> {
             picture.image.save(output_path)?;
             Ok(())
         }
+        PictureCommand::BulkDecode {
+            higurashi,
+            directory_path,
+            output_path
+        } =>  {
+            let _ = fs::create_dir(&output_path);
+            //let _ = fs::remove_file("pic_headers.txt");
+            //let mut ph_file = File::options().append(true).create(true).open("pic_headers.txt")?;
+            let pool = WPool::new(16);
+            for entry in std::fs::read_dir(directory_path)? {
+                let path = entry?.path();
+                let picture = std::fs::read(&path)?;
+                let format = if higurashi {
+                    shin_core::format::picture::PictureFormat::HigurashiV2
+                } else {
+                    shin_core::format::picture::PictureFormat::Umineko
+                };
+                let header = shin_core::format::picture::read_picture_header_prefix_with_format(&picture, picture.len() as u64, format)?;
+                let basename = path.file_name().unwrap().to_str().unwrap().to_string();
+                //"[PIC_B]509733554|146x135[PIC_E]"
+                let mut pic_header = format!("[PIC_B]{}|{}x{}[PIC_E]", header.picture_id,
+                                        header.effective_width.to_string(),
+                                        header.effective_height.to_string()).as_bytes().to_vec();
+                while pic_header.len() < 64 {
+                    pic_header.push(0);
+                }
+                //writeln!(&mut ph_file, "{}:{}|{}x{}", basename, header.picture_id, header.effective_width.to_string(), header.effective_height.to_string() )?;
+                let input_path = path.clone();
+                let basedir = output_path.clone();
+                pool.submit(move|| {
+                    let pic = shin_core::format::picture::read_picture_with_format::<SimpleMergedPicture,>(&picture, (), format);
+                    let mut output_file = Path::new(&basedir).join(basename);
+                    //output_file.set_extension("png");
+                    //let _ = pic.unwrap().image.save(output_file);
+                    output_file.set_extension("webp");
+                    let img = pic.unwrap().image;
+                    let encode = Encoder::new_rgba(img.as_raw(), img.width(), img.height()).quality(82.0).method(6).encode(Unstoppable);
+                    let mut webp = encode.unwrap_or_default();//unwrap_or(Vec::new());
+                    if webp.len() == 0 {
+                        println!("webp encode failed, copying {}", output_file.display());
+                        output_file.set_extension("pic");
+                        _ = fs::copy(input_path, output_file);
+                        return;
+                    }
+                    webp.extend(pic_header);
+                   _ = fs::write(output_file, &webp);
+                });
+            }
+            pool.stop_wait();
+            Ok(())
+        }
+        PictureCommand::Test {
+            picture_path
+        } => {
+            // Simulating
+            let mut file = File::open(picture_path).expect("Reading file failed!");           
+            let mut bytes = Vec::new();
+            file.read_to_end(&mut bytes).expect("Reading file to buffer failed!");
+            if bytes.len() < 64 {
+                println!("Unable to read file {} !", bytes.len());
+                return Ok(());
+            }
+            let start = bytes.len() - 64;
+            if start == 0 {
+                println!("Failed to parse PIC header");
+                return Ok(());
+            }
+            if &bytes[start..start+7] == b"[PIC_B]" {
+                println!("Found picture header");
+                let mut proto_header = &bytes[start..(bytes.len())];
+                let eof = String::from_utf8_lossy(proto_header).find("[PIC_E]").expect("Failed to parse proto_header");
+                proto_header = &proto_header[7..eof];
+                println!("Header {}", String::from_utf8_lossy(proto_header));
+            }
+            return Ok(());
+        }
+        PictureCommand::TestWrite {
+            picture_path
+        } => {
+            let mut file = File::options().read(true).write(true).open(picture_path).expect("Reading file failed!");  
+            let mut bytes = Vec::new();
+            file.read_to_end(&mut bytes).expect("Reading file to buffer failed!");
+            let mut pic_header = "[PIC_B]509733554|146x135[PIC_E]".as_bytes().to_vec();
+            while pic_header.len() < 64 {
+                pic_header.push(0);
+            }
+            //file.write_at(pic_header, bytes.len());
+            let _ = file.write(&pic_header);
+            return Ok(());
+         }
+        
     }
 }
 

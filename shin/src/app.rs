@@ -376,7 +376,7 @@ impl ReferenceApp {
 
 impl ShinApp for App {
     const FULLSCREEN_SHORTCUT: Option<KeyCode> = Some(KeyCode::KeyF);
-    const WINDOW_TITLE: &'static str = "うみねこのなく頃に咲 〜猫箱と夢想の交響曲〜";
+    const WINDOW_TITLE: &'static str = "Umineko When They Cry Saku: Symphony of the Catbox and Daydreams";
     type Parameters = Cli;
     type EventType = ();
     type ActionType = AppAction;

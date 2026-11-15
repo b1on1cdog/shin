@@ -29,6 +29,33 @@ pub use self::{
     },
 };
 
+/// Derive the WebP replacement path for a `.pic` asset, if applicable.
+pub(crate) fn webp_fallback_path(path: &str) -> Option<String> {
+    //const WEBP_EXTENSION: &str = ".webp";
+    let (stem, extension) = path.rsplit_once('.')?;
+    extension.eq_ignore_ascii_case("pic").then(|| format!("{stem}.webp"))
+}
+
+#[cfg(test)]
+mod webp_fallback_tests {
+    use super::webp_fallback_path;
+
+    #[test]
+    fn derives_only_picture_replacements() {
+        assert_eq!(
+            webp_fallback_path("/picture/text001.pic"),
+            Some("/picture/text001.webp".to_owned())
+        );
+        assert_eq!(
+            webp_fallback_path("/picture/text001.PIC"),
+            Some("/picture/text001.webp".to_owned())
+        );
+        assert_eq!(webp_fallback_path("/picture/text001.webp"), None);
+        assert_eq!(webp_fallback_path("/main.snr"), None);
+        assert_eq!(webp_fallback_path("/picture/no-extension"), None);
+    }
+}
+
 #[cfg(test)]
 pub use self::locate::locate_assets;
 

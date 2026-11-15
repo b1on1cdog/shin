@@ -1111,6 +1111,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "crossbeam-channel"
+version = "0.5.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "98b0cc327b5bc766e7fda9c9260cc0fa81b43a8e240440422dff70788e3f9ef1"
+dependencies = [
+ "crossbeam-utils",
+]
+
+[[package]]
 name = "crossbeam-deque"
 version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1488,6 +1497,12 @@ name = "endi"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a3d8a32ae18130a3c84dd492d4215c3d913c3b07c6b63c2eb3eb7ff1101ab7bf"
+
+[[package]]
+name = "enough"
+version = "0.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "877362cb7b70d1c617f0cd3c67708bd58d894a86af5104018e2c10ebaee3c02f"
 
 [[package]]
 name = "enum-as-inner"
@@ -2927,10 +2942,27 @@ checksum = "85ab80394333c02fe689eaf900ab500fbd0c2213da414687ebf995a65d5a6104"
 dependencies = [
  "bytemuck",
  "byteorder-lite",
+ "image-webp",
  "moxcms",
  "num-traits",
  "png",
 ]
+
+[[package]]
+name = "image-webp"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "525e9ff3e1a4be2fbea1fdf0e98686a6d98b4d8f937e1bf7402245af1909e8c3"
+dependencies = [
+ "byteorder-lite",
+ "quick-error",
+]
+
+[[package]]
+name = "imgref"
+version = "1.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e44b0a4eaa4c82f441d50a963f2d5f05a787240aeee097597033e72accfd22f"
 
 [[package]]
 name = "indexmap"
@@ -3248,6 +3280,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "libwebp-sys"
+version = "0.14.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b3a87b44e34d17161e4f17d92a463d596cb13825dcd1758ed18fd3a721e189c"
+dependencies = [
+ "cc",
+ "glob",
+ "pkg-config",
+]
+
+[[package]]
 name = "lilt"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3412,9 +3455,9 @@ dependencies = [
 
 [[package]]
 name = "miniz_oxide"
-version = "0.8.5"
+version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e3e04debbb59698c15bacbb6d93584a8c0ca9cc3213cb423d31f760d8843ce5"
+checksum = "1fa76a2c86f704bdb222d66965fb3d63269ce38518b83cb0575fca855ebb6316"
 dependencies = [
  "adler2",
  "simd-adler32",
@@ -4742,6 +4785,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "quick-error"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a993555f31e5a609f617c12db6250dedcac1b0a85076912c436e6fc9b2c8e6a3"
+
+[[package]]
 name = "quick-xml"
 version = "0.41.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4952,6 +5001,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51743d3e274e2b18df81c4dc6caf8a5b8e15dbe799e0dca05c7617380094e884"
 
 [[package]]
+name = "rgb"
+version = "0.8.53"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47b34b781b31e5d73e9fbc8689c70551fd1ade9a19e3e28cfec8580a79290cc4"
+dependencies = [
+ "bytemuck",
+]
+
+[[package]]
 name = "ringbuf"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5148,14 +5206,18 @@ dependencies = [
  "clap",
  "clap_complete",
  "counter",
+ "futures",
  "hound",
  "image",
+ "image-webp",
  "itertools",
  "ogg",
  "ron",
  "shin-asm",
  "shin-core",
  "tracing-subscriber",
+ "webpx",
+ "wpool",
 ]
 
 [[package]]
@@ -5308,6 +5370,7 @@ dependencies = [
  "getrandom 0.3.1",
  "glam 0.34.1",
  "heapless",
+ "image",
  "indexmap",
  "itertools",
  "kira",
@@ -6841,6 +6904,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "webpx"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86d3649fadcba9449d3d46c698eda9dff6371931b15f9a5fcb6e6891c2470add"
+dependencies = [
+ "enough",
+ "imgref",
+ "libwebp-sys",
+ "rgb",
+ "whereat",
+ "zenpixels",
+]
+
+[[package]]
 name = "wgpu"
 version = "27.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7163,6 +7240,12 @@ dependencies = [
  "static_assertions",
  "web-sys",
 ]
+
+[[package]]
+name = "whereat"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab90f361db038ba3135da12c938c328fb43a012992101879e3d6ebccb4d7eba8"
 
 [[package]]
 name = "which"
@@ -7686,6 +7769,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "wpool"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c278f5abd6a793e7c37e0822aef3bbbc047bc76e5db32b00ea1fc4c2976b111"
+dependencies = [
+ "crossbeam-channel",
+]
+
+[[package]]
 name = "wyz"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7844,6 +7936,16 @@ name = "zeno"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6df3dc4292935e51816d896edcd52aa30bc297907c26167fec31e2b0c6a32524"
+
+[[package]]
+name = "zenpixels"
+version = "0.2.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5851fd39b312749a3c367a0cd3522bd95d43276cfa613e9c18df748447cef3a8"
+dependencies = [
+ "bytemuck",
+ "whereat",
+]
 
 [[package]]
 name = "zerocopy"
