@@ -8,6 +8,7 @@ mod savedata;
 mod scenario;
 
 use std::{
+    fs,
     fs::File,
     io::{BufReader, BufWriter, Read},
     path::PathBuf,
@@ -25,22 +26,11 @@ use savedata::{SavedataCommand, savedata_command};
 use scenario::{ScenarioCommand, scenario_command};
 use shin_core::format::{audio::AudioSource, picture::SimpleMergedPicture};
 use tracing_subscriber::EnvFilter;
-/*
-//use image::codecs::webp::Encoder as WebpEncoder
-//use little_exif::metadata::Metadata;
-//use little_exif::exif_tag::ExifTag;
-//use serde_json;
-use ormlite::model::*;
-use ormlite::Connection;
-use ormlite::sqlite::SqliteConnection;
-*/
-use std::fs;
+//
 use std::io::Write;
-//use futures::executor::block_on;
 use std::path::Path;
 use wpool::WPool;
 use webpx::{Encoder, Unstoppable};
-//use std::any::type_name_of_val;
 
 #[derive(clap::Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -117,12 +107,14 @@ enum PictureCommand {
         // Outut directory
         output_path: PathBuf,
     },
+    /*
     Test {
         picture_path: PathBuf,
     },
     TestWrite {
         picture_path: PathBuf,
     },
+    */
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -214,23 +206,6 @@ fn generate_command(command: GenerateCommand) -> Result<()> {
     );
     Ok(())
 }
-/*
-#[derive(Model, Debug)]
-#[ormlite(table = "pic_header")]
-pub struct MPictureHeaderInfo {
-    #[ormlite(primary_key)]
-    pub filename: String,
-    pub origin_x: i16,
-    pub origin_y: i16,
-    pub effective_width: u16,
-    pub effective_height: u16,
-    pub block_count: u32,
-    pub picture_id: u32,
-    pub flags: u32,
-    /// Per-file placement scale in units of 1/4096; cache aliases may differ.
-    pub scale: u32,
-}
-*/
 
 fn picture_command(command: PictureCommand) -> Result<()> {
     match command {
@@ -302,45 +277,6 @@ fn picture_command(command: PictureCommand) -> Result<()> {
             pool.stop_wait();
             Ok(())
         }
-        PictureCommand::Test {
-            picture_path
-        } => {
-            // Simulating
-            let mut file = File::open(picture_path).expect("Reading file failed!");           
-            let mut bytes = Vec::new();
-            file.read_to_end(&mut bytes).expect("Reading file to buffer failed!");
-            if bytes.len() < 64 {
-                println!("Unable to read file {} !", bytes.len());
-                return Ok(());
-            }
-            let start = bytes.len() - 64;
-            if start == 0 {
-                println!("Failed to parse PIC header");
-                return Ok(());
-            }
-            if &bytes[start..start+7] == b"[PIC_B]" {
-                println!("Found picture header");
-                let mut proto_header = &bytes[start..(bytes.len())];
-                let eof = String::from_utf8_lossy(proto_header).find("[PIC_E]").expect("Failed to parse proto_header");
-                proto_header = &proto_header[7..eof];
-                println!("Header {}", String::from_utf8_lossy(proto_header));
-            }
-            return Ok(());
-        }
-        PictureCommand::TestWrite {
-            picture_path
-        } => {
-            let mut file = File::options().read(true).write(true).open(picture_path).expect("Reading file failed!");  
-            let mut bytes = Vec::new();
-            file.read_to_end(&mut bytes).expect("Reading file to buffer failed!");
-            let mut pic_header = "[PIC_B]509733554|146x135[PIC_E]".as_bytes().to_vec();
-            while pic_header.len() < 64 {
-                pic_header.push(0);
-            }
-            //file.write_at(pic_header, bytes.len());
-            let _ = file.write(&pic_header);
-            return Ok(());
-         }
         
     }
 }

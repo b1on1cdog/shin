@@ -23,7 +23,6 @@ use crate::asset::system::{Asset, AssetDataAccessor, AssetLoadContext};
 
 #[cfg(test)]
 use shin_core::format::picture::read_picture_header_prefix;
-//use std::fs::File;
 
 pub struct GpuPictureBlock {
     pub native_format: u16,
@@ -40,13 +39,18 @@ pub struct ExtPictureHeader {
     //pub picture_id: u32,
     pub origin_x: i16,
     pub origin_y: i16,
+    //pub offset_x: u16,
+    //pub offset_y: u16,
 }
+
 impl ExtPictureHeader {
     pub fn new() -> Self {
         return ExtPictureHeader{
            // picture_id: 0,
             origin_x: 0,
             origin_y: 0,
+            //offset_x: 0,
+            //offset_y: 0,
         }
     }
     /*
@@ -79,20 +83,21 @@ pub fn parse_ext_picture_header(bytes: &[u8]) -> ExtPictureHeader {
     let origin_res: Vec<&str> = header_values[1].split("x").collect();
     if origin_res.len() != 2 {
         println!("[debug] header_text {}, origin_res {:?} ({})", header_text, origin_res, origin_res.len());
-        println!("Unable to parse origin_x and origin_y from header!")
+        println!("Unable to parse origin_x and origin_y from header!");
+        return ExtPictureHeader::new();
     }
     /*
     let offset_res: Vec<&str> = header_values[2].split("x").collect();
     if offset_res.len() != 2 {
-        println!("Unable to parse offset_x and offset_y from hreader!")
+        println!("Unable to parse offset_x and offset_y from hreader!");
     }
     */
     return ExtPictureHeader{
         //picture_id: header_values[0].parse().expect("Unable to parse picture_id"),
         origin_x: origin_res[0].to_string().parse().expect("Unable to parse origin_x"),
         origin_y: origin_res[1].to_string().parse().expect("Unable to parse origin_y"),
-        //offset_x: offset_res[0].to_string().parse().expect("Unable to parse offset_x"),
-        //offset_y: offset_res[1].to_string().parse().expect("Unable to parse offset_y"),
+        //offset_x: offset_res[0].to_string().parse().unwrap_or_default(),//.expect("Unable to parse offset_x")
+        //offset_y: offset_res[1].to_string().parse().unwrap_or_default(),//.expect("Unable to parse offset_y"),
     }
 }
 
@@ -342,6 +347,7 @@ fn decode_webp_picture(
     data: &[u8],
 ) -> Result<(PictureBlocks, u32, u32, ExtPictureHeader)> {
     let ext_header = parse_ext_picture_header(data);
+    println!("decoding: {}", label);
     let image = image::load_from_memory_with_format(data, image::ImageFormat::WebP)
         .context("Decoding WebP picture")?
         .to_rgba8();
@@ -422,15 +428,13 @@ impl Asset for Picture {
                         )
                     })
                 }).await?;
-            //let mut origin_x = (effective_width / 2) as i16;
-            //let mut origin_y = (effective_height / 2) as i16;
-            //let ext_header = parse_ext_picture_header(&data);
+
             return Ok(Self {
                 label,
                 effective_width,
                 effective_height,
-                origin_x:   ext_header.origin_x.into(),
-                origin_y:   ext_header.origin_y.into(),
+                origin_x:   (ext_header.origin_x / 2).into(),
+                origin_y:   (ext_header.origin_y / 2).into(),
                 flags: 1,
                 scale: 1.0, // 4096 as f32 * (1.0 / 4096.0)
                 blocks: Arc::new(blocks),
